@@ -1,0 +1,1 @@
+"0","datos<-read.spss(""DB_3.sav"", to.data.frame = TRUE)"

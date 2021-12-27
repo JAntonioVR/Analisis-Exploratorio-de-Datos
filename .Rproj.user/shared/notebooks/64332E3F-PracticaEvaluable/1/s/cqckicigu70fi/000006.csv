@@ -1,0 +1,5 @@
+"0","not_available<-function(data,na.rm=F){"
+"0","  data[is.na(data)]<-mean(data,na.rm=T)"
+"0","  data"
+"0","}"
+"0","datos$ZTLIBROP<-not_available(datos$ZTLIBROP)"

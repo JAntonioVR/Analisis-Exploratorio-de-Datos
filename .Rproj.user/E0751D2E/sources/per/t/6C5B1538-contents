@@ -1,0 +1,274 @@
+################################################################################
+# Ejemplo de ACP con datos de de concentraciones de 11 elementos químicos en   #
+# restos de vidrio.                                                            #
+# En este estudio se analiza la viabilidad de un ACP y en caso afirmativo se   #
+# interpretan sus resultados.                                                  #
+################################################################################
+
+# -------------------------------------- #
+# PASO 0: carga de unos datos de inter?s #
+# -------------------------------------- #
+# El paquete "archdata" tiene datos de concentraciones de 11 elementos qu?micos
+# de 105 muestras de restos de vidrio en Manchester y en Leiceter
+
+# Instalaci?n del paquete desde un repositorio en caso de no estar instalado
+install.packages("archdata")
+# Carga del paquete "archdata" si est? instalado
+library(archdata)
+
+# Carga y asignaci?n a una variable del conjunto de datos de inter?s "RBGlass1
+data("RBGlass1")
+datos<-RBGlass1
+
+# La variable "datos" es un data.frame
+# Eliminamos la primera columna del data.frame porque la ubicaci?n del resto 
+# de vidrio no aporta nada al ACP (un ?ndice negativo en cualquier objeto de
+# R indica que esa dimensi?n es eliminada)
+datos_pca<-datos[,-1]
+# Guardo los datos originales porque la variable datos_pca va a cambiar a lo 
+# largo del an?lisis
+datos_originales<-datos_pca
+# La funci?n "head" muestra unos cuantos datos del data.frame aunque trabajmos
+# con las 105 muestras de vidrio recogida
+head(datos_pca)
+
+# PASO 1: ?tiene sentido un ACP?
+# --------------------------------------
+# Para responder a esta pregunta se comprueba si existe correlaci?n entre las
+# variables con la funci?n "cor" del paquete base, que proporciona la matriz
+# de correlaciones R
+cor(datos_pca)
+
+# Observando la matriz de datos existe correlaci?n importante entre algunas
+# variables, como sodio (NA) y antimonio (Sb) o titanio (Ti) e hierro (Fe)
+cor(datos_pca$Na,datos_pca$Sb)
+cor(datos_pca$Ti,datos_pca$Fe)
+
+# El contraste de esfericidad de Bartlett permite comprobar si las correlaciones
+# son distintas de 0 de modo significativo. La hip?tesis nula es que det(R)=1
+# La funci?n "cortest.bartlett" del paquete "pysch" reliza este test.
+# Esta funci?n trabaja con datos normalizados
+# Instalaci?n del paquete desde un repositorio en caso de no estar instalado
+install.packages("psych")
+# Carga del paquete "psych" si est? instalado
+library(psych)
+
+# Se normalizan los datos
+datos_normalizados<-scale(datos_pca)
+# Se hace el test de esfericidad
+cortest.bartlett(cor(datos_normalizados))
+# Para estos datos se obtiene un test significativo de modo que se rechaza la 
+# hip?tesis nula y por tanto los datos no est?n incorrelados
+
+# ------------------------------------------ #
+# Paso 2: an?lisis exploratorio de los datos #
+# ------------------------------------------ #
+# El objetivo es el de localizar outliers que puedan dar lugar a resultados
+# err?neos ya que el ACP es muy sensible a valores extremos. Un diagrama de 
+# cajas puede dar esta primera informaci?n.
+boxplot(datos_pca,main="Análisis exploratorio de datos",
+        xlab="Elementos químicos",
+        ylab="% de concentración",
+        col=c(1:11))
+# Al obtener el gráfico con estos datos se observa que tanto el Magnesio (Mg),
+# el Calcio (Ca) asi como el Potasio (K), F?sforo (P) y el Manganeso (Mn) 
+# presentan outliers.
+
+
+# Los outliers deben ser tratados de forma independiente por el investigador, 
+# de modo que para el ACP es necesario eliminarlos
+# La funci?n outlier definida como sigue elimina los outliers sustituy?ndolos
+# por los promedios del resto de valores.
+# Ejemplo de construcci?n de una funci?n en R
+outlier<-function(data,na.rm=T){ # T es True, el punto es un caracter mas
+  H<-1.5*IQR(data)
+  data[data<quantile(data,0.25,na.rm = T)-H]<-NA
+  data[data>quantile(data,0.75, na.rm = T)+H]<-NA
+  data[is.na(data)]<-mean(data,na.rm=T) #is.na devuelve true si está a NA, luego ahí calcula la media pero solo de los que no estan a NA
+  data
+}
+# TODO: Mejorar la función para que no haya outliers en ningún caso. Recursividad?
+
+# A continuaci?n aplicamos esta funci?n a cada una a de las variables
+datos_pca$Mg<-outlier(datos_pca$Mg)
+datos_pca$Ca<-outlier(datos_pca$Ca)
+datos_pca$K<-outlier(datos_pca$K)
+datos_pca$P<-outlier(datos_pca$P)
+datos_pca$Mn<-outlier(datos_pca$Mn)
+# TODO: OPTIMIZAR Y AUTOMATIZAR ESTO, UTILIZAR UNA FUNCIÓN LLAMADA apply 
+
+# Comparamos los datos originales y los arreglados 
+# Esta funci?n divide la salida gr?fica en dos columnas
+par(mfrow=c(1,2))
+# Boxplot de los datos originales
+boxplot(datos_originales,main="Datos originales",
+        xlab="Elementos qu?micos",
+        ylab="% de concentraci?n",
+        col=c(1:11))
+# Boxplot de los datos corregidos.
+boxplot(datos_pca,main="Datos sin outliers",
+        xlab="Elementos qu?micos",
+        ylab="% de concentraci?n",
+        col=c(1:11))
+
+# Llegado a este punto se dan las condiciones para realizar un ACP:
+# los datos est?n correlados y no hay 'casos raros'
+
+
+# ----------- #
+# Paso 3: ACP #
+# ----------- #
+
+# La funci?n "prcomp" del paquete base de R realiza este an?lisis
+# Pasamos los par?metros "scale" y "center" a TRUE para consideras
+# los datos originales normalizados
+PCA<-prcomp(datos_pca, scale=T, center = T)
+
+# El el campo "rotation" del objeto "PCA" es una matrix cuyas columnas
+# son los coeficientes de las componentes principales, es decir, el
+# peso de cada variable en la correspondiente componente principal
+PCA$rotation # (-0.17 * Al + 0.31 * Fe ...)
+
+
+# En el campo "sdev" del objeto "PCA" y con la funci?n summary aplicada
+# al objeto, obtenemos informaci?n relevante: desviaciones t?picas de 
+# cada componente principal, proporci?n de varianza explicada y acumlada.
+PCA$sdev # Las desviaciones típicas
+summary(PCA) # Desviación típica + proporcion de varianza explicada
+# Si a lo mejor te piden explicar el 80% de la variabilidad te vale con las 4 primeras Componentes Principales
+
+
+# A continuaci?n hacemos un an?lisis gr?fico de la varianza explicada
+# Instalaci?n del paquete desde un repositorio en caso de no estar instalado
+install.packages("ggplot2")
+# Carga del paquete "ggplot2" si est? instalado
+library(ggplot2)
+
+# El siguiente gr?fico muestra la proporci?n de varianza explicada
+varianza_explicada <- PCA$sdev^2 / sum(PCA$sdev^2)
+ggplot(data = data.frame(varianza_explicada, pc = 1:11),
+       aes(x = pc, y = varianza_explicada, fill=varianza_explicada )) +
+  geom_col(width = 0.3) +
+  scale_y_continuous(limits = c(0,0.6)) + theme_bw() +
+  labs(x = "Componente principal", y= " Proporci?n de varianza explicada")
+
+# El siguiente gr?fico muestra la proporci?n de varianza explicada
+varianza_acum<-cumsum(varianza_explicada)
+ggplot( data = data.frame(varianza_acum, pc = 1:11),
+        aes(x = pc, y = varianza_acum ,fill=varianza_acum )) +
+  geom_col(width = 0.5) +
+  scale_y_continuous(limits = c(0,1)) +
+  theme_bw() +
+  labs(x = "Componente principal",
+       y = "Proporci?n varianza acumulada")
+
+# -------------------------------------------------------------- #
+# Paso 4: selecci?n del n?mero de componentes principales ?ptimo #
+# -------------------------------------------------------------- #
+# Existen diferentes m?todos:
+# 1.- M?todo del codo (Cuadras, 2007). Ejercicio: buscar informaci?n (voluntario)
+# 2.- A criterio del investigador que elige un porcentaje m?nimo de varianza explicada
+# por las componentes principales (no es fiable porque puede dar m?s de las necesarias).
+# 3.- En este caso se utiliza la regla de Abdi et al. (2010). Se promedia las varianzas
+# explicadas por la componentes principales y se selecciona aquellas cuya proporci?n de 
+# varianza explicada supera la media.
+# En este caso se eligen tan solo tres direcciones principales tal y como se puede ver
+PCA$sdev^2
+mean(PCA$sdev^2) # Si elegimos las tres primeras CP tengo ya un 77% de variabilidad explicada.
+
+# Cada componente principal se obtiene de forma sencilla como combinaci?n lineal de todas
+# las variables con los coeficientes que indican las columnas de la matriz de rotaci?n
+# Ejercicio voluntario: escribir la expresi?n anal?tica de cada componente princial
+
+# -------------------------------------------------------------- #
+# Paso 5: Representaci?n gr?fica de las componentes principales  #
+# -------------------------------------------------------------- #
+# El paquete "factoextra" permite la representaci?n de las componentes principales
+# junto con las variables y observaciones del an?lisis de componentes principales.
+
+# Instalaci?n del paquete desde un repositorio en caso de no estar instalado
+# El siguiente paquete requiere tener al menos la vesri?n de R 4.0.x
+install.packages("factoextra")
+# Carga del paquete "factorextra" si est? instalado
+library("factoextra")
+# Esto produce una comparativa entre la primera y segunda componente principal analizando 
+# que variables tienen m?s peso para la definici?n de cada componente principal
+fviz_pca_var(PCA,
+             repel=TRUE,col.var="cos2",
+             legend.title="Distancia")+theme_bw()
+# Representa las coordenadas de cada elemento en el PCA
+
+
+# Esto produce una comparativa entre la primera y tercera componente principal analizando 
+# que variables tienen m?s peso para la definici?n de cada componente principal
+fviz_pca_var(PCA,axes=c(1,3),
+             repel=TRUE,col.var="cos2",
+             legend.title="Distancia")+theme_bw()
+
+# Esto produce una comparativa entre la segunda y tercera componente principal analizando 
+# que variables tienen m?s peso para la definici?n de cada componente principal
+fviz_pca_var(PCA,axes=c(2,3),
+             repel=TRUE,col.var="cos2",
+             legend.title="Distancia")+theme_bw()
+
+
+
+
+
+
+# Es posible tambi?n representar las observaciones de los objetos junto con las componentes 
+# principales mediante la orden "contrib" de la funci?n "fviz_pca_ind", as? como identificar
+# con colores aquellas observaciones que mayor varianza explican de las componentes principales
+ 
+# Observaciones en la primera y segunda componente principal
+fviz_pca_ind(PCA,col.ind = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel=TRUE,legend.title="Contrib.var")+theme_bw()
+# Los numeritos que salen son el numero de la observación (la fila), para poder
+# identificarlos rapidamente si hiciera falta.
+
+# Observaciones en la primera y tercera componente principal
+fviz_pca_ind(PCA,axes=c(1,3),col.ind = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel=TRUE,legend.title="Contrib.var")+theme_bw()
+
+# Observaciones en la segunda y tercera componente principal
+fviz_pca_ind(PCA,axes=c(2,3),col.ind = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel=TRUE,legend.title="Contrib.var")+theme_bw()
+
+
+# Representaci?n conjunta de variables y observaciones
+# que relaciona visualmente las posibles relaciones entre las
+# observaciones, las contribuciones de los individuos a las varianzas de las componentes
+# y el peso de las variables en cada componentes principal
+
+# Variables y observaciones en las 1ª  y 2ª componente principal
+fviz_pca(PCA,
+         alpha.ind ="contrib", col.var = "cos2",col.ind="seagreen",
+         gradient.cols = c("#FDF50E", "#FD960E", "#FD1E0E"),
+         repel=TRUE,
+         legend.title="Distancia")+theme_bw()
+
+# Variables y observaciones en las 1?  y 3? componente principal
+fviz_pca(PCA,axes=c(1,3),
+         alpha.ind ="contrib", col.var = "cos2",col.ind="seagreen",
+         gradient.cols = c("#FDF50E", "#FD960E", "#FD1E0E"),
+         repel=TRUE,
+         legend.title="Distancia")+theme_bw()
+
+# Variables y observaciones en las 1?  y 2? componente principal
+fviz_pca(PCA,axes=c(1,2),
+         alpha.ind ="contrib", col.var = "cos2",col.ind="seagreen",
+         gradient.cols = c("#FDF50E", "#FD960E", "#FD1E0E"),
+         repel=TRUE,
+         legend.title="Distancia")+theme_bw()
+
+
+
+# Por ?ltimo, ya que el objeto de este estudio era reducir la dimensi?n de las variables
+# utilizadas, es posible obtener las coordenadas de los datos originales tipificados en el
+# nuevo sistema de referencia.
+# De hecho lo tenemos almacenado desde que utilizamos la funci?n prcomp para crear la variable PCA
+
+head(PCA$x)

@@ -1,0 +1,159 @@
+---
+title: "Análisis Multivariante"
+author: "Juan Antonio Villegas Recio"
+date: "27/12/2021"
+output: html_document
+lang: es
+---
+
+```{r,include=FALSE}
+# install.packages("EnvStats")
+library(EnvStats)
+library(car)
+library(foreign)
+
+```
+
+------------------------------------------------------------------------
+
+```{=tex}
+\begin{center}
+ \tableofcontents
+ \textsc{--}\\
+\end{center}
+```
+
+------------------------------------------------------------------------
+
+# Información sobre el Dataset
+
+En un conjunto constituido por 34 estados del mundo se han observado 11 variables cuyos resultados se recogen en el archivo **`DB_3.sav`**. Estas variables se han estandarizado, pues están tomadas con unidades de medida muy diferentes. Estas variables son:
+
+## Variables
+
+-   `Ztlibrop`: Número de libros publicados.
+-   `Ztejerci`: Cociente entre el número de individuos en ejército de tierra y población total del estado.
+-   `Ztpobact`: Cociente entre población activa y total.
+-   `Ztenergi`: Tasa de consumo energético.
+-   `Zpservi`: Población del sector servicios.
+-   `Zpagricu`: Población del sector agrícola.
+-   `Ztmedico`: Tasa de médicos por habitante.
+-   `Zespvida`: Esperanza de vida.
+-   `Ztminfan`: Tasa de mortalidad infantil.
+-   `Zpobdens`: Densidad de población.
+-   `Zpoburb`: Porcentaje de población urbana.
+
+## Otra información de interés
+
+<!-- TODO -->
+
+Cargamos los datos a partir del fichero **`DB_3.sav`**.
+
+```{r,echo=F,include=F}
+datos<-read.spss("DB_3.sav", to.data.frame = TRUE)
+```
+
+## Primera visualización
+
+Echamos un primer vistazo a los datos, observando directamente el dataframe en el que vienen, para ver si los datos efectivamente están estandarizados (datos numéricos, continuos, tanto negativos como positivos y entorno al 0), y para comprobar la existencia de *NA*s.
+
+```{r,echo=F}
+head(datos)
+```
+
+Vemos que, en efecto, los valores están próximos a 0, por lo que efectivamente están normalizados. Sin embargo, al menos en las primeras 5 filas no hemos encontrado ningún valor perdido.
+
+## Tratamiento de los *NA*
+
+Vamos a ver si hay, dónde, y cuántos *NA* hay en los datos
+```{r,echo=F}
+cbind(apply(is.na(datos),2,sum),apply(is.na(datos),2,sum)/dim(datos)[1])
+```
+Como vemos, tan sólo hay un valor perdido en la variable `ztlibrop`, concretamente, se desconoce ese valor en Marruecos:
+
+```{r}
+datos['marrueco','ZTLIBROP']
+```
+Por tanto, en conclusión todas las variables distintas de `zlibrop` tienen un $0%$ de valores perdidos, mientras que `zlibrop` tiene un $2'94%$ de valores perdidos, lo cual supone un sólo valor perdido que se puede importar, por lo que no es necesario ningún análisis de posibles patrones de los valores perdidos.
+
+Como tan sólo tenemos variables numéricas (salvo `pais`), podemos importar este único valor perdido utilizando la media de la columna `zlibrop`.
+
+```{r}
+not_available<-function(data,na.rm=F){
+  data[is.na(data)]<-mean(data,na.rm=T)
+  data
+}
+datos$ZTLIBROP<-not_available(datos$ZTLIBROP)
+```
+
+## Análisis descriptivo numérico
+
+En este apartado iremos variable por variable obteniendo los resultados de aplicar diferentes medidas descriptivas, clásicas y resistentes, de centralidad, forma y dispersión.
+
+```{r,echo=F}
+#Definimos las medidas resistentes
+PMC<-function(x){ return((as.double(quantile(x,0.25))+as.double(quantile(x,0.75)))/2)}
+
+trimedia<-function(x){return((median(x)+PMC(x))/2)}
+
+centrimedia<-function(x){
+  indices<-(x>quantile(x,0.25)&x<quantile(x,0.75))
+  valores<-x[indices]
+  return(sum(valores)/length(valores))
+}
+
+RIQ<-function(x){return(quantile(x,0.75)-quantile(x,0.25))}
+
+MEDA<-function(x){return(median(abs(x-median(x))))}
+
+CVc<-function(x){return((quantile(x,0.75)-quantile(x,0.25))/(quantile(x,0.75)+quantile(x,0.25)))}
+
+H1<-function(x){return((quantile(x,0.25)+quantile(x,0.75)-2*median(x))/(2*median(x)))}
+H2<-function(x){return(median(x)-(quantile(x,0.1)+quantile(x,0.9))/(2))}
+H3<-function(x){return(H2(x)/median(x))}
+
+#Creamos una función que aplique todas estas medidas
+
+descriptivo<-function(x){
+  
+  temp<-rbind(PMC(x),trimedia(x),centrimedia(x))
+  rownames(temp)<-c("PMC","Trimedia","Centrimedia")
+  centralidad<-list(clasica=list(media=mean(x)),resistente=temp)
+  
+  temp<-rbind(RIQ(x),MEDA(x),CVc(x))
+  rownames(temp)<-c("Rango Inter-Cuartílico","MEDA","CVc")
+  dispersion<-list(clasica=list(desviación_típica=sd(x),Coef_varización=sd(x)/mean(x),rango=range(x)),resistente=temp)
+  
+  temp<-rbind(H1(x),H2(x),H3(x))
+  rownames(temp)<-c("Asimetría de Yule","Asimetría de Kelly","Asimetría de Kelly adimensional")
+  forma<-list(clasica=list(skewness=skewness(x),kurtosis=kurtosis(x)),resistente=temp)
+  cat(names(x))
+  return(list(centralidad=centralidad,dispersion=dispersion,forma=forma))
+}
+```
+
+```{r,echo=F}
+descriptivo(datos[,2])
+hist(col="darkblue",datos[,2],main="Densidad de población")
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

@@ -1,0 +1,5 @@
+"0","faltantes<-which(is.na(datos$zcaloría))"
+"0","cor(datos[-faltantes,],use=""complete.obs"")[,""zcaloría""]"
+"2","Error in cor(datos[-faltantes, ], use = ""complete.obs"") : 
+  no complete element pairs
+"
