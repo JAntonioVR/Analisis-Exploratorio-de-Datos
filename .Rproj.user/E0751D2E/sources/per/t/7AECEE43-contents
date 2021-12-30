@@ -74,7 +74,7 @@ Como vemos, tan sólo hay un valor perdido en la variable `ztlibrop`, concretame
 ```{r}
 datos['marrueco','ZTLIBROP']
 ```
-Por tanto, en conclusión todas las variables distintas de `zlibrop` tienen un $0%$ de valores perdidos, mientras que `zlibrop` tiene un $2'94%$ de valores perdidos, lo cual supone un sólo valor perdido que se puede importar, por lo que no es necesario ningún análisis de posibles patrones de los valores perdidos.
+Por tanto, en conclusión todas las variables distintas de `zlibrop` tienen un $0\%$ de valores perdidos, mientras que `zlibrop` tiene un $2'94\%$ de valores perdidos, lo cual supone un sólo valor perdido que se puede importar, por lo que no es necesario ningún análisis de posibles patrones de los valores perdidos.
 
 Como tan sólo tenemos variables numéricas (salvo `pais`), podemos importar este único valor perdido utilizando la media de la columna `zlibrop`.
 
@@ -132,10 +132,195 @@ descriptivo<-function(x){
 }
 ```
 
+### `ZPOBDENS`: Densidad de población
+
 ```{r,echo=F}
 descriptivo(datos[,2])
 hist(col="darkblue",datos[,2],main="Densidad de población")
 ```
+
+Al igual que ocurrirá con todas las variables, al estar estandarizadas (normalizadas), la media es $0$ y la desviación típica $1$, por lo que podremos comentar poco acerca de la centralidad y de la dispersión de cada variable por separado. Debemos comentar que el coeficiente de variación llama la atención que sea tan grande, pero se debe a que al dividir por la media, que es prácticamente 0, el resultado es muy grande.
+
+Por otra parte, vemos que el rango de valores no es muy simétrico respecto a la media, lo cual ya nos afirma cierta asimetría en la distribución que podemos confirmar si miramos coeficientes de asimetría como `skewness`, que es positivo, por lo que la distribución es asímetrica a la derecha. El valor de Kurtosis es además menor que tres, por lo que no hay apuntamiento.
+
+Si observamos el histograma, confirmamos la alta concentración de valores entorno al $[-1,0]$ y la asimetría comentada.
+
+### `ZTMINFAN`: Mortalidad infantil
+
+```{r,echo=F}
+descriptivo(datos[,3])
+hist(col="darkblue",datos[,3],main="Mortalidad infantil")
+```
+En este caso sí vemos un rango intercuartílico más centrado, lo que nos indica menor dispersión y mayor simetría. Si observamos el histograma, la distribución tiene cierta tendencia a la uniformidad, rota por un exceso en el intervalo $[-1,-0.5]$ y un defecto en el $[0.0, 0.5]$, lo que nos indica que en general la tasa de mortalidad es similar en los paises, pero hay más paises que tienen una tasa baja, mientras que son muy pocos (2) los que tienen una tasa media. El coeficiente de asímetria nos indica que hay asimetría a la derecha, lo cual confirmamos también en el histograma.
+
+### `ZESPVIDA`: Esperanza de vida
+
+```{r,echo=F}
+descriptivo(datos[,4])
+hist(col="darkblue",datos[,4],main="Esperanza de vida")
+```
+
+En este caso, mirando el histograma, la tendencia es clara a una gran asimetría a la izquierda, confirmada por un coeficiente de `skewness` negativo. Por otra parte, el rango, que está considerablemente desviado en torno al 0, nos afirma dispersión, y efectivamente, vemos que hay países con todo tipo de esperanzas de vida, aunque la tendencia es que haya pocos países con esperanzas de vida bajas, mientras que la mayoría tienen esperanzas de vida altas.
+
+### `ZPOBURB`: Porcentaje de población urbana
+
+```{r,echo=F}
+descriptivo(datos[,5])
+hist(col="darkblue",datos[,5],main="Porcentaje de población urbana")
+```
+
+En este caso, sin embargo, los datos están centrados y poco dispersos, como indican el rango (el cual está casi centrado en el $0$) y el rango intercuartílico (el cual es relativamente pequeño), aunque el intervalo modal es el $[0.5,1]$, que no está tan centrado. En general los valores correspondientes a los países están repartidos por todos los intervalos, aunque en los extremos encontramos menos valores, como también es normal, aunque no pueden considerarse realmente outliers ni datos anómalos, pues hay países con muchas ciudades muy pobladas y países muy rurales.
+
+Por otro lado, hay poco apuntamiento, como indica el coeficiente de kurtosis, que es negativo, y poca asimetría, pues el coeficiente `skewness`, aunque es negativo, indicando cierta asimetría a la izquierda, es muy pequeño.
+
+### `ZTMEDICO`: Tasa de médicos por habitante
+
+```{r,echo=F}
+descriptivo(datos[,6])
+hist(col="darkblue",datos[,6],main="Tasa de médicos por habitante")
+```
+
+En una primera observación, vemos incluso cierto parecido con el histograma de la mortalidad infantil. En este caso los valores parecen estar centrados si no contamos los dos países con mayor tasa, que podrían considerarse outliers. Sin embargo, vemos que en general la tendencia es a tener una baja tasa de médicos por habitante. La simetría a la derecha en este caso es clara, aunque no demasiado pronunciada, reflejada por un coeficiente de `skewness` cercano a $0.5$. 
+
+### `ZPAGRICU`: Población del sector agrícola
+
+```{r,echo=F}
+descriptivo(datos[,7])
+hist(col="darkblue",datos[,7],main="Población del sector agrícola")
+```
+Aquí vemos un rango bastante grande, junto con un rango intercuartílico igual no tan grande, lo cual nos dice que hay datos dispersos aunque la mayoría se concentran en un intervalo pequeño. El coeficiente `skewness` en este caso es bastante positivo, indicando asimetría a la derecha, que podemos confirmar con el histograma.
+
+### `ZPSERVI`: Población del sector servicios
+
+```{r,echo=F}
+descriptivo(datos[,8])
+hist(col="darkblue",datos[,8],main="Población del sector servicios")
+```
+En este caso, y al contrario que en la población agrícola, que tendía a ser baja, vemos que la tendencia es a tener una alta población dedicada al sector servicios, probablemente también relacionada con el porcentaje de población urbana, generalmente dedicada a los servicios, más que a la agricultura. Vemos que el rango en este caso, aunque centrado en cero y con un rango intercuartílico pequeño, es poco significativo, pues la mayoría de países concentra su población dedicada al sector servicios en el intervalo $[0,1.5]$, aunque el intervalo de amplitud $0.5$ en el que se sitúan más países es el $[-1,-0.5]$.
+
+Sobre la simetría, la forma es bastante irregular, por lo que las medidas realmente no es que sean demasiado significativas, aunque sí hay una leve asímetría a la izquierda, respaldada con un coeficiente `skewness`  pequeño pero negativo.
+
+### `ZTLIBROP`: Número de libros publicados
+
+```{r,echo=F}
+descriptivo(datos[,9])
+hist(col="darkblue",datos[,9],main="Número de libros publicados")
+```
+En este caso vemos un rango muy amplio y desviado respecto al cero, luego hay países con números de libros muy dispersos, con muchos y con muy pocos. El rango intercuartílico sin embargo no es muy grande, lo cual unido a un coeficiente `skewness` alto y positivo nos afirma que la mayoría de los países publican pocos libros.
+
+### `ZTEJERCI`: Cociente entre el número de individuos en ejército de tierra y población total del estado
+
+```{r,echo=F}
+descriptivo(datos[,10])
+hist(col="darkblue",datos[,10],main="Cociente entre el número de individuos en ejército de tierra y población total del estado")
+```
+
+La distribución es de hecho muy similar a la de los libros publicados, con un rango incluso más amplio provocado por un outlier que tiene una gran cantidad de personal en el ejército. Sin embargo, vemos un rango intercuartílico muy pequeño, una asimetría alta a la derecha y un kurtosis muy alto también, lo cual nos dice que hay una alta concentración en intervalos pequeños. Esto está respaldado por el histograma, en el que vemos una alta concentración en el intervalo $[-1,1]$ que contrasta con el resto. En conclusión, en los países la tendencia es tener un cociente estándar de población militar respecto a total, pero hay un país, que de hecho podemos confirmar que es 'Israel', que tiene un cociente muy alto en comparación.
+
+### `ZTPOBACT`: Cociente entre población activa y total
+
+```{r,echo=F}
+descriptivo(datos[,11])
+hist(col="darkblue",datos[,11],main="Cociente entre población activa y total")
+```
+
+En este caso tenemos un rango intercuartílico bastante estándar, similar al de casos anteriores, pero un rango muy amplio. Podemos ver en el histograma que hay dos países con un cociente muy bajo, es decir, con poca población activa, que hacen que los datos no estén más centrados. 
+
+La distribución se asemeja en forma a una normal más que otras, de hecho el coeficiente `skewness` es muy cercano a cero, sin embargo, hay varias irregularidades notables, las cuales provocan además un kurtosis negativo, es decir, la distribución está aplanada.
+
+### `ZTENERGI`: Tasa de consumo energético
+
+```{r,echo=F}
+descriptivo(datos[,12])
+hist(col="darkblue",datos[,12],main="Tasa de consumo energético")
+```
+
+En una primera observación del histograma, se observa una clara acumulación de valores en torno al intervalo $[-1,-0.5]$, mientras que en los demás intervalos de longitud $0.5$ hay 5 o menos países. De hecho vemos un rango intercuartílico menor que en la mayoría de las variables, menor que $1.40$, mientras que el rango es muy amplio. La forma del histograma y las medidas recuerdan a la de `ZTLIBROP` y a la de `ZTEJERCI`, es decir, una alta concentración en valores bajos y menor en valores altos, presentando incluso outliers.
+
+```{r, echo=F}
+summary(datos[,-1])
+```
+
+
+En conclusión, tenemos algunas variables muy asimétricas a la derecha, a la izquierda, algunas que parecen querer aproximarse a una uniforme y otras que parecen querer aproximarse a una normal. Sin embargo, el conjunto de datos es pequeño, tan sólo son 36 ejemplos de países, que no son demasiados. Probablemente con una muestra más representativa podríamos ver tendencias más claras. Sin embargo, con estas muestras hemos visto algunas similitudes entre distribuciones que puede que nos confirme (o no) el análisis multivariante.
+
+## Valores extremos
+
+Primero de todo vamos a observar (de nuevo) la forma de las distribuciones de las variables mediante sus histogramas en un mismo gráfico:
+
+```{r,echo=F}
+par(mar=c(1,1,1,1))
+par(mfrow=c(3,4))
+invisible(apply(datos[,-1], 2,function(x){hist(x,main=NULL,col="darkblue",xlab=NULL,ylab=NULL)}))
+
+```
+
+Observando los gráficos, de primeras y tal y como veníamos adelantando, hay muy pocas variables que se puedan considerar normales, pues la mayoría presentan asimetrías, algunas muy pronunciadas como la de `ZTLIBROP` (fila 2, columna 4) y otras no tanto como las de `ZPAGRICU` (fila 2, columna 2). Sin embargo, podríamos a simple vista considerar normales a `ZPOBURB` (fila 1, columna 4) y a `ZTPOBACT` (fila 3, columna 2), pero las demás son muy asimétricas o muy irregulares.
+
+A continuación y tras un exhaustivo análisis numérico de las variables, con la gran ayuda de los histogramas, procedemos a tratar los valores extremos u *outliers*.  Para ello, haremos uso de un gráfico '*boxplot*' que nos ayudará a localizar mejor los valores extremos.
+
+```{r,echo=F}
+colfunc<-colorRampPalette(c("darkblue","yellow"))
+boxplot(datos[,-1],
+        xlab=NULL,
+        ylab=NULL,
+        col=colfunc(11),
+        las=2)
+```
+
+En nuestro caso, son `POBDENS`, `ZTEJERCI` y `ZTENERGI`las variables que presentan outliers. Personalmente, no pienso que sea buena idea eliminar el outlier de `POBSDENS`, pues los boxplot hacen representaciones de los outliers bajo el supuesto de normalidad. Si atendemos al análisis descriptivo de la variable `POBDENS` podemos observar que su histograma y sus características son completamente distintas a una normal, por lo que no consideraremos a este como outlier.
+
+Sin embargo, observando los histogramas y el propio boxplot, las variables `ZTEJERCI` y `ZTENERGI` presentan claramente outliers que trataremos a continuación.
+
+```{r,echo=F}
+outlier<-function(data,na.rm=T){
+  H<-1.5*IQR(data)
+  
+  if(any(data<=(quantile(data,0.25,na.rm = T)-H))){
+    data[data<=quantile(data,0.25,na.rm = T)-H]<-NA
+    data[is.na(data)]<-mean(data,na.rm=T)
+    data<-outlier(data)}
+  
+  if(any(data>=(quantile(data,0.75, na.rm = T)+H))){
+    data[data>=quantile(data,0.75, na.rm = T)+H]<-NA
+    data[is.na(data)]<-mean(data,na.rm=T)
+    data<-outlier(data)
+  }
+  return(data)
+}
+
+datos[,-1:-2]<-apply(datos[,-1:-2], 2, outlier)
+```
+
+Una vez tratados los outliers, vemos de nuevo los gráficos boxplot.
+
+```{r,echo=F}
+boxplot(datos[,-1],
+        xlab=NULL,
+        ylab=NULL,
+        col=colfunc(11),
+        las=2)
+```
+ 
+Y vemos que efectivamente hemos eliminado los outliers comentados anteriormente. Nuestro conjunto de datos está por tanto en este momento libre de valores perdidos y de outliers.
+
+## Normalidad
+
+Seguidamente, y debido a que muchos análisis multivariantes que utilizaremos en el futuro requieren hipótesis de normalidad, utilizaremos un gráfico '*qqplot*' para comprobar de una manera más formal, pero aún visual, qué variables se acercan a la normalidad.
+
+```{r,echo=F}
+par(mar=c(1,1,1,1))
+par(mfrow=c(3,4))
+invisible(apply(datos[,-1], 2, function(x){
+  qqnorm(x,main=NULL)
+  abline(a=0,b=1,col="red")
+}))
+```
+
+
+Observamos que la mayoría de las variables tienden a acercarse a la diagonal, por ejemplo, `ZPOBURB` (fila 1, columna 4) y `ZTPOBACT` (fila 3, columna 2), ya comentadas anteriormente, se aproximan mucho a la diagonal. Sin embargo, `ZPOBDENS` (fila 1, columna 1), `ZTPOBACT` (fila 3, columna 1) y `ZTENERGI`, y sobre todo la segunda, se alejan más de la diagonal, y por tanto de la distribución normal.
+
+En conclusión, aunque ninguna variable se acerque demasiado, la mayoría se aproximan lo suficiente a la normal, aunque algunas disten más. Este hecho puede ser que debamos tenerlo en cuenta en algún momento del análisis multivariante si algún procedimiento no nos da resultados coherentes o esperados, pues puede deberse a la falta de normalidad de ciertas variables.
 
 
 ## R Markdown
