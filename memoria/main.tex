@@ -1,0 +1,81 @@
+%++++++++++++++++++++++++++++++++++++++++
+% Don't modify this section unless you know what you're doing!
+\documentclass[letterpaper,11pt]{article}
+\usepackage{natbib}
+\usepackage[utf8]{inputenc}
+\bibliographystyle{unsrtnat}
+\usepackage{tabularx} % extra features for tabular environment
+\usepackage{amsmath}  % improve math presentation
+\usepackage{graphicx} % takes care of graphic including machinery
+\usepackage[margin=1in,letterpaper]{geometry} % decreases margins
+\usepackage[spanish]{babel}
+%\usepackage{cite} % takes care of citations
+\usepackage[final]{hyperref} % adds hyper links inside the generated pdf file
+\hypersetup{
+	colorlinks=true,       % false: boxed links; true: colored links
+	linkcolor=blue,        % color of internal links
+	citecolor=blue,        % color of links to bibliography
+	filecolor=magenta,     % color of file links
+	urlcolor=blue         
+}
+%+++++++++++++++++++++++++++++++++++++++
+\begin{document}
+
+\title{Estadística Multivariante \\\textbf{Práctica Evaluable: Aprendiendo de los datos}}
+\author{Juan Antonio Villegas Recio}
+\date{\today}
+\maketitle
+
+\begin{abstract}
+
+A partir de una base de datos con información variada de una serie de países, se pretende realizar un análisis exploratorio de los datos y descubrir posibles relaciones entre ellos. Contamos con información como la densidad de población, el porcentaje de población activa, población urbana o libros publicados en cada país. Las variables con las que contamos de hecho son muy diversas en cuanto a contexto, por ello interesa buscar posibles relaciones entre variables que aparentemente no tienen nada que ver. 
+
+Para ello se han preprocesado los datos mediante la corrección de valores perdidos y valores extremos y utilizado técnicas de análisis univariante como tests de normalidad, gráficos *boxplot* o *qqplot*; multivariantes como análisis de componentes principales o análisis factorial junto con herramientas de aprendizaje automático como análisis de clusters. En conjunto, se busca con todas estas técnicas extraer la información de interés humano subyacente a este conjunto de datos, buscando con qué variables obtener la mayor cantidad de información, cuáles son más importantes, y posibles variables latentes subyacentes.
+ 
+\end{abstract}
+
+\section{Introducción}
+
+Nuestro conjunto de datos cuenta con un total de 34 instancias, la cual cada una representa un país del mundo. Hay representación de países de cada uno de los continentes, con la variedad que eso implica a todos los niveles. El conjunto de datos cuenta además con 12 variables de las cuales 11 son numéricas y la restante es categórica, el nombre del país, por lo que claramente hay tantos valores como instancias y esta variable será excluida de los cálculos por tratarse principalmente de un identificador. Las variables numéricas están ya normalizadas con media 0 y varianza 1, teniendo así de antemano solucionados posibles problemas relacionados con las distintas escalas. Estas variables son:
+
+\begin{itemize}
+    \item \textbf{Ztlibrop}: Número de libros publicados.
+    \item \textbf{Ztejerci}: Cociente entre el número de individuos en ejército de tierra y población total del estado.
+    \item \textbf{Ztpobact}: Cociente entre población activa y total.
+    \item \textbf{Ztenergi}: Tasa de consumo energético.
+    \item \textbf{Zpservi}: Población del sector servicios.
+    \item \textbf{Zpagricu}: Población del sector agrícola.
+    \item \textbf{Ztmedico}: Tasa de médicos por habitante.
+    \item \textbf{Zespvida}: Esperanza de vida.
+    \item \textbf{Ztminfan}: Tasa de mortalidad infantil.
+    \item \textbf{Zpobdens}: Densidad de población.
+    \item \textbf{Zpoburb}: Porcentaje de población urbana.
+\end{itemize}
+
+Como vemos, hay variables muy distintas pertenecientes a varios contextos diferentes: medicina, esperanza de vida, población urbana, población activa, consumo, etc. Esta diversidad nos sugiere estudiar posibles agrupaciones de variables inesperadas. Para ello se ha hecho uso de técnicas como el análisis factorial. También podemos buscar reducir la dimensión conservando la mayor parte de la información, y para ello aplicamos análisis de componentes principales, en ambos casos cerciorandonos previamente de los requisitos que las técnicas requieren. Por último, se ha aplicado una conocida técnica de aprendizaje automático no supervisado: el clustering, buscando agrupaciones entre países que puedan ser significativas.
+
+Por tanto, buscamos estudiar a fondo los datos que se nos dan, apreciando la distribución de cada variable por separado, para posteriormente estudiar la distribución multivariante. Se pretende buscar además agrupaciones de variables relacionadas junto con agrupaciones de instancias con características similares, haciendo así por tanto un estudio de variables relacionadas y de instancias con rasgos comunes en lo que a las variables con las que contamos respecta.
+
+\section{Materiales y Métodos}
+
+\subsection{Materiales}
+
+\subsection{Métodos estadísticos}
+
+
+\section{Resultados}
+
+\section{Discusión}
+
+\section{Conclusión}
+
+
+\begin{thebibliography}{99}
+
+\bibitem[\protect\citeauthoryear{Author}{2010}]{Author2010}
+Author, A.N and Another, A. N., 2010, MNRAS, 431, 28.
+
+\end{thebibliography}
+
+
+\end{document}
