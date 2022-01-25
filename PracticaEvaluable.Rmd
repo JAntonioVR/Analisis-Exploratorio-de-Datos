@@ -1,13 +1,31 @@
 ---
-title: "Análisis Multivariante"
+title: "Práctica Evaluable: Aprendiendo de los datos"
 author: "Juan Antonio Villegas Recio"
-date: "27/12/2021"
-output: html_document
+date: "`r Sys.Date()`"
 lang: es
+output:
+  html_document: 
+    
+    toc: true
+    number_sections: false
+    toc_float: 
+      collapsed: false
+      smooth_scroll: false
+  pdf_document: default
 ---
 
-```{r,include=FALSE}
+```{r,include=F}
+# Instalamos los paquetes que no tengamos
 # install.packages("EnvStats")
+# install.packages("psych")
+# install.packages("ggplot2")
+# install.packages("factoextra")
+# install.packages("polycor")
+# install.packages("ggcorrplot")
+# install.packages("corrr")
+# install.packages("MVN")
+
+# Carga de paquetes
 library(EnvStats)
 library(car)
 library(foreign)
@@ -36,7 +54,7 @@ library(MVN)
 
 ------------------------------------------------------------------------
 
-# Información sobre el Dataset
+# Información sobre el Conjunto de datos
 
 En un conjunto constituido por 34 estados del mundo se han observado 11 variables cuyos resultados se recogen en el archivo **`DB_3.sav`**. Estas variables se han estandarizado, pues están tomadas con unidades de medida muy diferentes. Estas variables son:
 
@@ -54,13 +72,9 @@ En un conjunto constituido por 34 estados del mundo se han observado 11 variable
 -   `Zpobdens`: Densidad de población.
 -   `Zpoburb`: Porcentaje de población urbana.
 
-## Otra información de interés
-
-<!-- TODO -->
-
 Cargamos los datos a partir del fichero **`DB_3.sav`**.
 
-```{r,echo=F,include=F}
+```{r}
 datos_enteros<-read.spss("DB_3.sav", to.data.frame = TRUE)
 datos_enteros[11,"PAIS"] <- "espana" # Para evitar problemas de codificacion
 datos = datos_enteros
@@ -84,15 +98,15 @@ Vamos a ver si hay, dónde, y cuántos *NA* hay en los datos
 cbind(apply(is.na(datos),2,sum),apply(is.na(datos),2,sum)/dim(datos)[1])
 ```
 
-Como vemos, tan sólo hay un valor perdido en la variable `ztlibrop`, concretamente, se desconoce ese valor en Marruecos:
+Como vemos, tan sólo hay un valor perdido en la variable `ZTLIBROP`, concretamente, se desconoce ese valor en Marruecos:
 
 ```{r}
 datos['marrueco','ZTLIBROP']
 ```
 
-Por tanto, en conclusión todas las variables distintas de `zlibrop` tienen un $0\%$ de valores perdidos, mientras que `zlibrop` tiene un $2'94\%$ de valores perdidos, lo cual supone un sólo valor perdido que se puede importar, por lo que no es necesario ningún análisis de posibles patrones de los valores perdidos.
+Por tanto, en conclusión todas las variables distintas de `ZTLIBROP` tienen un 0% de valores perdidos, mientras que `ZTLIBROP` tiene un 2.94% de valores perdidos, lo cual supone un sólo valor perdido que se puede importar, por lo que no es necesario ningún análisis de posibles patrones de los valores perdidos.
 
-Como tan sólo tenemos variables numéricas (salvo `pais`), podemos importar este único valor perdido utilizando la media de la columna `zlibrop`.
+Como tan sólo tenemos variables numéricas (salvo `PAIS`), podemos importar este único valor perdido utilizando la media de la columna `ZTLIBROP`.
 
 ```{r}
 not_available<-function(data,na.rm=F){
@@ -261,17 +275,20 @@ En una primera observación del histograma, se observa una clara acumulación de
 summary(datos[,-1])
 ```
 
-En conclusión, tenemos algunas variables muy asimétricas a la derecha, a la izquierda, algunas que parecen querer aproximarse a una uniforme y otras que parecen querer aproximarse a una normal. Sin embargo, el conjunto de datos es pequeño, tan sólo son 36 ejemplos de países, que no son demasiados. Probablemente con una muestra más representativa podríamos ver tendencias más claras. Sin embargo, con estas muestras hemos visto algunas similitudes entre distribuciones que puede que nos confirme (o no) el análisis multivariante.
+En conclusión, tenemos algunas variables muy asimétricas a la derecha, a la izquierda, algunas que parecen querer aproximarse a una uniforme y otras que parecen querer aproximarse a una normal. Sin embargo, el conjunto de datos es pequeño, tan sólo son 36 ejemplos de países, que no son demasiados. Probablemente con una muestra más representativa podríamos ver tendencias más claras. Sin embargo, con estas muestras hemos visto algunas similitudes entre distribuciones.
 
 ## Valores extremos {#valores-extremos}
 
 Primero de todo vamos a observar (de nuevo) la forma de las distribuciones de las variables mediante sus histogramas en un mismo gráfico:
 
-```{r,echo=F}
+```{r, echo=F}
 par(mar=c(1,1,1,1))
 par(mfrow=c(3,4))
-invisible(apply(datos[,-1], 2,function(x){hist(x,main=NULL,col="darkblue",xlab=NULL,ylab=NULL)}))
-
+for (k in 2:12) {
+  j0 <- names(datos)[k]
+  x <- datos[,k]
+  hist(x, main = j0, col = 'darkblue', xlab = NULL, ylab = NULL)
+  }
 ```
 
 Observando los gráficos, de primeras y tal y como veníamos adelantando, no parece que las distribuciones de las variables se parezcan en general a una normal, pues presentan asimetrías. Algunas  de ellas son muy pronunciadas como la de `ZTLIBROP` (fila 2, columna 4) y otras no tanto como las de `ZPAGRICU` (fila 2, columna 2). Aún así, en futuras fases habrá que comprobar y en caso negativo asumir normalidad en las distribuciones para poder aplicar análisis multivariantes.
@@ -287,9 +304,7 @@ boxplot(datos[,-1],
         las=2)
 ```
 
-En nuestro caso, son `POBDENS`, `ZTEJERCI` y `ZTENERGI`las variables que presentan outliers. Personalmente, no pienso que sea buena idea eliminar el outlier de `POBSDENS`, pues los boxplot hacen representaciones de los outliers bajo el supuesto de normalidad. Si atendemos al análisis descriptivo de la variable `POBDENS` podemos observar que su histograma y sus características son completamente distintas a una normal, por lo que no consideraremos a este como outlier.
-
-Sin embargo, observando los histogramas y el propio boxplot, las variables `ZTEJERCI` y `ZTENERGI` presentan claramente outliers que trataremos a continuación.
+En nuestro caso, son `POBDENS`, `ZTEJERCI` y `ZTENERGI`las variables que presentan outliers. Eliminaremos dichos datos importándolos por la media.
 
 ```{r,echo=F}
 outlier<-function(data,na.rm=T){
@@ -308,7 +323,9 @@ outlier<-function(data,na.rm=T){
   return(data)
 }
 
-datos[,-1:-2]<-apply(datos[,-1:-2], 2, outlier)
+datos[,c('ZPOBDENS','ZTEJERCI','ZTENERGI')]<-apply(datos[,c('ZPOBDENS','ZTEJERCI','ZTENERGI')], 2, outlier)
+# Reescalamos, pues hemos cambiado la distribución 
+datos[,c('ZPOBDENS','ZTEJERCI','ZTENERGI')]<-scale(datos[,c('ZPOBDENS','ZTEJERCI','ZTENERGI')]) 
 ```
 
 Una vez tratados los outliers, vemos de nuevo los gráficos boxplot.
@@ -330,13 +347,16 @@ Seguidamente, y debido a que muchos análisis multivariantes que utilizaremos en
 ```{r,echo=F}
 par(mar=c(1,1,1,1))
 par(mfrow=c(3,4))
-invisible(apply(datos[,-1], 2, function(x){
-  qqnorm(x,main=NULL)
-  abline(a=0,b=1,col="red")
-}))
+for (k in 2:12) {
+  j0 <- names(datos)[k]
+  x0 <- seq(min(datos[, k]), max(datos[, k]), le = 50)
+  x <- datos[,k]
+  qqnorm(x, main = j0)
+  qqline(x)
+  }
 ```
 
-Observamos que la mayoría de las variables tienden a acercarse a la diagonal, por ejemplo, `ZPOBURB` (fila 1, columna 4) y `ZTPOBACT` (fila 3, columna 2), ya comentadas anteriormente, se aproximan mucho a la diagonal. Sin embargo, `ZPOBDENS` (fila 1, columna 1), `ZTEJERCI` (fila 3, columna 1) y `ZTENERGI`, y sobre todo la segunda, se alejan más de la diagonal, y por tanto de la distribución normal.
+Observamos que la mayoría de las variables tienden a acercarse a la diagonal, por ejemplo, `ZPOBURB` (fila 1, columna 4) y `ZTPOBACT` (fila 3, columna 2), ya comentadas anteriormente, se aproximan mucho a la diagonal. Sin embargo, `ZPOBDENS` (fila 1, columna 1) y `ZTMINFAN` (fila 1, columna 2) se alejan más de la diagonal, y por tanto de la distribución normal.
 
 En conclusión, aunque ninguna variable se acerque demasiado, la mayoría se aproximan lo suficiente a la normal, aunque algunas disten más. Este hecho puede ser que debamos tenerlo en cuenta en algún momento del análisis multivariante si algún procedimiento no nos da resultados coherentes o esperados, pues puede deberse a la falta de normalidad de ciertas variables.
 
@@ -372,7 +392,7 @@ apply(datos_aux[ind,], 2, function(x){
   })
 ```
 
-Vemos que efectivamente en la mayoría de las variables, seleccionando los países según continente, se tiene la misma varianza. No se cumple para las variables `ZESPVIDA` y `ZPOBURB`, lo cual puede deberse a las grandes diferencias que existen sobre la esperanza de vida y las grandes ciudades en África. En los países africanos la esperanza de vida es menor en general y también hay menos grandes ciudades que en Asia y Europa, por lo que es normal que la distribución sea distinta.
+Vemos que efectivamente en la mayoría de las variables, seleccionando los países según continente, se tiene la misma varianza. No se cumple para las variables `ZESPVIDA` y `ZPOBURB`, lo cual puede deberse a las grandes diferencias que existen sobre la esperanza de vida y las grandes ciudades en África. En los países africanos la esperanza de vida es menor en general y también hay menos grandes ciudades que en Asia y Europa, por lo que es de esperar que la distribución sea distinta.
 
 ## Exploración Descriptiva
 
@@ -422,7 +442,7 @@ cor(datos_pca$ZPAGRICU,datos_pca$ZPOBURB)
 cor(datos_pca$ZPSERVI, datos_pca$ZPAGRICU)
 ```
 
-Para comprobar estas y otras correlaciones usamos el contraste de esfericidad de Bartlett, el cual permite comprobar si las correlaciones son distintas de 0 de modo significativo. La hipótesis nula es que $det(R)=1$. Utilizaremos la función `cortest.bartlett` del paquete `psych`, que requiere de datos normalizados, pero estos datos ya sabemos que están normalizados, por lo que no es necesario ningún procesamiento adicional.
+Para comprobar estas y otras correlaciones usamos el contraste de esfericidad de Bartlett, el cual permite comprobar si las correlaciones son distintas de 0 de modo significativo. La hipótesis nula es que $\det(R)=1$ (siendo $R$ la matriz de correlaciones). Utilizaremos la función `cortest.bartlett` del paquete `psych`, que requiere de datos normalizados, pero estos datos ya sabemos que están normalizados, por lo que no es necesario ningún procesamiento adicional.
 
 ```{r}
 cortest.bartlett(cor(datos_pca), n=100)
@@ -434,9 +454,9 @@ Como vemos, hemos obtenido un p-valor prácticamente nulo, e inferior a cualquie
 
 Por otra parte, recordamos que el análisis de componentes principales es muy sensible a *outliers*, pero ya nos ocupamos de ese asunto en [apartados anteriores](#valores-extremos), por lo que tenemos cumplidos todos los requisitos: datos correlados, sin valores extremos y normalizados.
 
-## Análisis de componentes principales
+## Análisis de componentes principales {#ACP}
 
-Buscamos ahora realizar un estudio de la posibilidad de reducción de la dimensión mediante variables observables. Es decir, realizar un análisis de componentes principales.
+Buscamos ahora realizar un estudio de la posibilidad de reducción de la dimensión mediante variables observables. Es decir, realizar un análisis de componentes principales. Veamos la matriz de pesos que se calcula:
 
 ```{r, echo=FALSE}
 # scale y center están a True porque consideramos los datos normalizados
@@ -472,11 +492,11 @@ ggplot( data = data.frame(varianza_acum, pc = 1:11),
   scale_y_continuous(limits = c(0,1)) +
   theme_bw() +
   labs(x = "Componente principal",
-       y = "Proporci?n varianza acumulada")
+       y = "Proporción varianza acumulada")
 
 ```
 
-Si observamos los gráficos, dependiendo del porcentaje de varianza explicada que fijemos, serían suficientes más o menos componentes principales, siendo observable que sólo con las tres primeras tendríamos más de un $75%$ de la varianza explicada. Sabiendo esto, es momento de elegir el número de componentes óptimo.
+Si observamos los gráficos, dependiendo del porcentaje de varianza explicada que fijemos, serían suficientes más o menos componentes principales, siendo observable que sólo con las tres primeras tendríamos más de un 75% de la varianza explicada. Sabiendo esto, es momento de elegir el número de componentes óptimo.
 
 Utilizaremos el la regla de Abdi et al. (2010). Se promedia las varianzas explicadas por la componentes principales y se seleccionan aquellas cuya proporción de varianza explicada supera la media.
 
@@ -514,7 +534,7 @@ fviz_pca_var(PCA,axes=c(2,3),
 
 ```
 
-Como vemos, en la primera componente principal (gráficos 1 y 2) la mayoría de las variables tienen peso (flechas horizontales), aunque destacamos a `ZPOBDENS` y a `ZTEJERCI` que no parecen tener tanto peso, las flechas son más verticales. Mientras que si observamos la tercera componente principal (gráficos 2 y 3), vemos que `ZTEJERCI` tiene más peso en la tercera componente principal, mientras que `ZPOBDENS` tiende a repartirlo entre las tres componentes principales, sin llegar a tener demasiado en ninguna de las 3, pues su mayor peso se encontraba en la cuarta componente principal. Estas conclusiones estaban ya reflejadas en la matriz de rotación expuesta anteriormente, pero en estos gráficos pueden comprobarse más visualmente
+Como vemos, en la primera componente principal (gráficos 1 y 2) la mayoría de las variables tienen peso (flechas horizontales), aunque destacamos a `ZPOBDENS` y a `ZTEJERCI` que no parecen tener tanto peso, las flechas son más verticales y cortas. Mientras que si observamos la tercera componente principal (gráficos 2 y 3), vemos que `ZTEJERCI` tiene más peso en la tercera componente principal, mientras que `ZPOBDENS` tiende a repartirlo entre las tres componentes principales, sin llegar a tener demasiado en ninguna de las 3, pues su mayor peso se encontraba en la cuarta componente principal. Estas conclusiones estaban ya reflejadas en la matriz de rotación expuesta anteriormente, pero en estos gráficos pueden comprobarse más visualmente
 
 ## Análisis factorial
 
@@ -558,7 +578,7 @@ print(modelo_varimax$loadings,cut=0)
 fa.diagram(modelo_varimax)
 ```
 
-Nos podemos fijar en la matriz o en el diagrama que las variables `ZPAGRICU`, `ZPOBURB`,`ZPSERVI`,`ZESPVIDA`,`ZTMINFAN`,`ZTLIBROP`,`ZTMEDICO` y `ZTENERGI` forman un factor latente, el cual si nos fijamos en la matriz de correlación anteriormente presentada podemos observar muy presente. Por otra parte, las variables `ZTPOBACT` y `ZTEJERCI` forman por sí solas un factor latente. Esto ocurre porque estas variables no tienen nada que ver con las demás y por eso no se agrupan con otras. De hecho, si nos fijamos en la matriz de correlaciones, estas no tienen correlaciones fuertes con ninguna otra variable.
+Nos podemos fijar en la matriz o en el diagrama que las variables `ZPAGRICU`, `ZPOBURB`, `ZPSERVI`, `ZESPVIDA`, `ZTMINFAN`, `ZTLIBROP`, `ZTMEDICO` y `ZTENERGI` forman un factor latente, el cual si nos fijamos en la matriz de correlación anteriormente presentada podemos observar muy presente. Por otra parte, las variables `ZTPOBACT` y `ZTEJERCI` forman por sí solas un factor latente. Esto ocurre porque estas variables no tienen nada que ver con las demás y por eso no se agrupan con otras. De hecho, si nos fijamos en la matriz de correlaciones, estas no tienen correlaciones fuertes con ninguna otra variable.
 
 Estos hechos tan poco esperables en comparación con otros ejemplos se pueden deber, en parte, a que probablemente estos datos no están preparados para un análisis factorial y no tienen variables latentes subyacentes relevantes.
 
@@ -572,12 +592,13 @@ Recordemos que se usaron gráficos qqplot para examinar la normalidad univariant
 
 ```{r, echo=FALSE}
 datos_da = datos_fa
-datos_tidy <- melt(datos_da, value.name = "valor")
+datos_tidy <- melt(datos, value.name = "valor")
 aggregate(formula = valor ~ variable, data = datos_tidy,
           FUN = function(x){shapiro.test(x)$p.value})
 ```
 
-Como vemos, hay p-valores muy pequeños en varias variables. Destacamos a `ZTMINFAN` y a `ZTLIBROP`, que tienen p-valores especialmente pequeños. Las demás, a un nivel de significación del $1\%$ podemos afirmar que tienen distribución normal. Recordemos además que los gráficos `qqplot` nos dejaban intuir que `ZPOBDENS`, `ZTEJERCI` y `ZTENERGI` tampoco seguían una distribución normal univariante. La falta de normalidad univariante es mal presagio de cara a la comprobación de normalidad multivariante, pues según la teoría de la DNM implica que no se puede dar el supuesto de normalidad multivariante, por lo que habrá que tenerla en cuenta si en próximos análisis no se obtienen las conclusiones deseadas.
+Como vemos, hay p-valores muy pequeños en varias variables. Destacamos a `ZTMINFAN` y a `ZTLIBROP`, que tienen p-valores especialmente pequeños. Las demás, a un nivel de significación del 1% podemos afirmar que tienen distribución normal. Recordemos además que los gráficos `qqplot` nos dejaban intuir que `ZPOBDENS` y `ZMINFAN` y tampoco seguían una distribución normal univariante. La falta de normalidad univariante es mal presagio de cara a la comprobación de normalidad multivariante, pues según la teoría de la DNM implica que no se puede dar el supuesto de normalidad multivariante, por lo que habrá que tenerla en cuenta si en próximos análisis no se obtienen las conclusiones deseadas.
+
 
 ### Normalidad multivariante
 
@@ -601,7 +622,7 @@ hz_test$multivariateNormality
 
 ```
 
-Como podemos comprobar, el test de Royston nos ofrece un p-valor casi nulo, por lo que no podemos concluir a partir de este test que los datos siguen una DNM. Sin embargo, el test de HZ nos devuelve un p-valor que a un nivel de significación del $1\%$ (incluso del $5\%$) podemos concluir que los datos siguen una DNM. Esta discrepancia entre tests puede deberse a los outliers comentados anteriormente, a la falta de normalidad univariante, al pequeño tamaño de la muestra o a cualquier asunción realizada en apartados anteriores.
+Como podemos comprobar, el test de Royston nos ofrece un p-valor casi nulo, por lo que no podemos concluir a partir de este test que los datos siguen una DNM. Sin embargo, el test de HZ nos devuelve un p-valor que a un nivel de significación del 1% (incluso del 5%) podemos concluir que los datos siguen una DNM. Esta discrepancia entre tests puede deberse a los outliers comentados anteriormente, a la falta de normalidad univariante, al pequeño tamaño de la muestra o a cualquier asunción realizada en apartados anteriores.
 
 De hecho, el test de Shapiro-Wilk tiende a rechazar la hipótesis nula si el tamaño de la muestra es inferior a 50, y en este caso es 34, por lo que es normal encontrarnos variables que no siguen DNM. Sin embargo, podríamos fiarnos del test multivariante de H-Z para asumir que la distribución es una DNM, y por tanto, todas las variables que componen el vector aleatorio tienen que seguir distribución normal univariante.
 
@@ -637,7 +658,7 @@ k2 <- kmeans(datos_ca, centers = 2, nstart = 25)
 fviz_cluster(k2,data=datos_ca)
 ```
 
-En el gráfico podemos ver un resumen del resultado del clustering. Destacar que los dos clusters no se solapan, característica muy deseable en este ámbito. Por otra parte, si nos fijamos en las dimensiones del gráfico, están acompañadas de un porcentaje: $55.9\%$ en el eje horizontal y $14.8\%$ en el eje vertical. No es casualidad que coincidan con el $55.92\%$ de varianza explicada por la primera componente principal y el $14.82\%$ de varianza explicada por la segunda componente principal, como puede comprobarse en el apartado de [Análisis de componentes principales](#analisis-de-componentes-principales). Es decir, en el gráfico podemos ver representado el agrupamiento bajo un $70.74\%$ de la varianza explicada.
+En el gráfico podemos ver un resumen del resultado del clustering. Destacar que los dos clusters no se solapan, característica muy deseable en este ámbito. Por otra parte, si nos fijamos en las dimensiones del gráfico, están acompañadas de un porcentaje: 56% en el eje horizontal y 14.9% en el eje vertical. No es casualidad que coincidan con el 55.99% de varianza explicada por la primera componente principal y el 14.91% de varianza explicada por la segunda componente principal, como puede comprobarse en el apartado de [Análisis de componentes principales](#ACP). Es decir, en el gráfico podemos ver representado el agrupamiento bajo un 70.90% de la varianza explicada.
 
 ### Análisis de resultados
 
@@ -648,5 +669,3 @@ print(k2)
 ```
 
 Llama la atención que en la mayoría de las variables un cluster tiene media positiva y el otro negativa, como si en un cluster se encontraran países con dicha medida alta y en el otro baja, y este patrón se repite en la mayoría de las variables.
-
-Viendo las estadísticas y el gráfico, la conclusión más destacable y observable es que en un cluster se agrupan los países más desarollados y ricos y en otro los países menos desarrollados y pobres.
